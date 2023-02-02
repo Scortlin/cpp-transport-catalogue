@@ -8,7 +8,7 @@ namespace Transport_Catalogue {
 		add_bus.name = move(bus);
 		add_bus.circle_key = circle_key;
 		for (auto& stop : stops) {
-			for (auto& busstop : busstops_) {
+			for (auto& busstop : busstops) {
 				if (busstop.name == stop) {
 					add_bus.bus_stops.push_back(&busstop);
 				}
@@ -16,7 +16,7 @@ namespace Transport_Catalogue {
 		}
 		buses_.push_back(move(add_bus));
 		for (auto& stop : stops) {
-			for (auto& busstop : busstops_) {
+			for (auto& busstop : busstops) {
 				if (busstop.name == stop) {
 					busstop.buses.insert(buses_.back().name);
 				}
@@ -25,8 +25,8 @@ namespace Transport_Catalogue {
 		busname_to_bus_[buses_.back().name] = &buses_.back();
 	}
 	void TransportCatalogue::AddStop(const std::string& name, Coordinates& coord) {
-		busstops_.push_back({ name,move(coord),{},{} });
-		stopname_to_stop_[busstops_.back().name] = &busstops_.back();
+		busstops.push_back({ name,move(coord),{},{} });
+		stopname_to_stop_[busstops.back().name] = &busstops.back();
 	}
 
 	const Bus* TransportCatalogue::FindRoute(const string& bus_f) const {
@@ -42,14 +42,14 @@ namespace Transport_Catalogue {
 		return nullptr;
 	}
 
-	RoutInfoS TransportCatalogue::RouteInfo(const string& bus_f) const {
-		RoutInfoS routinfo;
+	RouteInfo TransportCatalogue::Route_Info(const string& bus_f) const {
+		RouteInfo routeinfo;
 		const Bus* bus = FindRoute(bus_f);
 		if (!bus) {
 			throw invalid_argument("bus is not found"s);
 		}
-		routinfo.rout_stops_count = bus->circle_key ? (bus->bus_stops.size() + 1) : ((bus->bus_stops.size() * 2) - 1);
-		routinfo.unic_rout_stop_count = Unic_stops_count(bus_f);
+		routeinfo.route_stops_count = bus->circle_key ? (bus->bus_stops.size() + 1) : ((bus->bus_stops.size() * 2) - 1);
+		routeinfo.unique_route_stop_count = Unique_stops_count(bus_f);
 		double route_length = 0.0;
 		double geographical_distance = 0.0;
 		for (auto iter = bus->bus_stops.begin(); iter + 1 != bus->bus_stops.end(); ++iter) {
@@ -67,9 +67,9 @@ namespace Transport_Catalogue {
 			route_length += GetDistanceBetweenStops((*(bus->bus_stops.end() - 1))->name, (*bus->bus_stops.begin())->name);
 			geographical_distance += ComputeDistance((*(bus->bus_stops.end() - 1))->coordinates, (*bus->bus_stops.begin())->coordinates);
 		}
-		routinfo.route_length = route_length;
-		routinfo.curvature = route_length / geographical_distance;
-		return routinfo;
+		routeinfo.route_length = route_length;
+		routeinfo.curvature = route_length / geographical_distance;
+		return routeinfo;
 	}
 
 	std::set<string_view> TransportCatalogue::StopInfo(const std::string& busstop) const {
@@ -77,7 +77,7 @@ namespace Transport_Catalogue {
 	}
 
 	void TransportCatalogue::SetDistanceBetweenStops(const std::string_view from, const std::string_view to, const uint32_t dist) {
-		for (auto& stop : busstops_) {
+		for (auto& stop : busstops) {
 			if (from == stop.name) {
 				stop.otherstop_dist[to] = dist;
 				break;
@@ -94,11 +94,12 @@ namespace Transport_Catalogue {
 		}
 		return ComputeDistance(stopname_to_stop_.at(from)->coordinates, stopname_to_stop_.at(to)->coordinates);
 	}
-	size_t TransportCatalogue::Unic_stops_count(const string& bus_name)const {
-		std::unordered_set<string_view> unic_bus_stops;
+
+	size_t TransportCatalogue::Unique_stops_count(const string& bus_name)const {
+		std::unordered_set<string_view> unique_bus_stops;
 		for (const auto& bus_stop : busname_to_bus_.at(bus_name)->bus_stops) {
-			unic_bus_stops.insert(bus_stop->name);
+			unique_bus_stops.insert(bus_stop->name);
 		}
-		return unic_bus_stops.size();
+		return unique_bus_stops.size();
 	}
 }

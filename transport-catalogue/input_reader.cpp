@@ -12,6 +12,7 @@ namespace Transport_Catalogue {
             int vvod_count;
             vector<string> bus_query_s;
             vector<Transport_Catalogue::detail::StopFindResult> busstop_coord_stopdists;
+
             is >> vvod_count;
             for (int i = 0; i < vvod_count; ++i) {
                 string key, bus_stop;
@@ -75,7 +76,7 @@ namespace Transport_Catalogue {
                 return result;
             }
             tuple<string, vector<string>, bool > FillRoute(string_view query) {
-                vector<string> unic_stops;
+                vector<string> unique_stops;
                 bool circle_key = true;
                 size_t iter = query.find(':');
                 string bus = static_cast<string>(query.substr(0, iter));
@@ -83,28 +84,28 @@ namespace Transport_Catalogue {
                     iter = query.find('-');
                 if (iter != query.npos) {
                     circle_key = false;
-                    unic_stops = FillUnicStops(query, circle_key);
+                    unique_stops = FillUniqueStops(query, circle_key);
                 }
                 else {
-                    unic_stops = FillUnicStops(query, circle_key);
-                    unic_stops.pop_back();
+                    unique_stops = FillUniqueStops(query, circle_key);
+                    unique_stops.pop_back();
                 }
-                return { bus,unic_stops, circle_key };
+                return { bus,unique_stops, circle_key };
             }
 
-            vector<string> FillUnicStops(string_view query, bool circle_flag) {
-                vector<string> unic_stops;
+            vector<string> FillUniqueStops(string_view query, bool circle_flag) {
+                vector<string> unique_stops;
                 size_t iter = (circle_flag ? query.find('>') : query.find('-'));
                 while (iter != query.npos) {
                     string_view station = query.substr(1, iter);
                     station.remove_suffix(2);
                     query.remove_prefix(iter + 1);
                     iter = circle_flag ? query.find('>') : query.find('-');
-                    unic_stops.push_back(static_cast<string>(station));
+                    unique_stops.push_back(static_cast<string>(station));
                 }
                 query.remove_prefix(1);
-                unic_stops.push_back(static_cast<string>(query));
-                return unic_stops;
+                unique_stops.push_back(static_cast<string>(query));
+                return unique_stops;
             }
 
         }

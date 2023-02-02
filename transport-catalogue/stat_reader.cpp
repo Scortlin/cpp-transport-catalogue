@@ -24,6 +24,7 @@ namespace Transport_Catalogue {
 				string bus_stop;
 				getline(in, bus_stop);
 				bus_stop = bus_stop.substr(1);
+
 				if (!tc.FindStop(bus_stop)) {
 					out << "Stop "s << bus_stop << ": not found"s << '\n';
 				}
@@ -49,10 +50,10 @@ namespace Transport_Catalogue {
 					out << "Bus "s << bus << ": not found"s << '\n';
 				}
 				else {
-					RoutInfoS rout_info = tc.RouteInfo(bus);
+					RouteInfo route_info = tc.Route_Info(bus);
 					out << setprecision(6);
-					out << "Bus "s << bus << ": "s << rout_info.rout_stops_count << " stops on route, "s << rout_info.unic_rout_stop_count << " unique stops, "s
-						<< rout_info.route_length << " route length, "s << rout_info.curvature << " curvature\n"s;
+					out << "Bus "s << bus << ": "s << route_info.route_stops_count << " stops on route, "s << route_info.unique_route_stop_count << " unique stops, "s
+						<< route_info.route_length << " route length, "s << route_info.curvature << " curvature\n"s;
 				}
 			}
 		}
