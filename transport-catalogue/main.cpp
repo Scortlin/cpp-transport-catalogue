@@ -1,13 +1,29 @@
+#include "json_reader.h"
+#include "request_handler.h"
+#include "json.h"
+#include "domain.h"
+#include "map_renderer.h"
 #include "transport_catalogue.h"
-#include "input_reader.h"
-#include "stat_reader.h"
-using namespace std;
-using namespace Transport_Catalogue;
 
-int main()
-{
-    TransportCatalogue ob1;
-    Transport_Catalogue_Input::FillCatalog(cin, ob1);
-    Transport_Catalogue_Output::ProcessingRequests(cin, cout, ob1);
-    return 0;
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <string_view>
+#include <deque>
+#include <vector>
+#include <sstream>
+#include <unordered_map>
+#include <iomanip>
+#include <tuple>
+using namespace std;
+
+int main() {
+	transport::catalog::TransportCatalogue tCatalog;
+	transport::render::MapRenderer map;
+	transport::request::RequestHandler handler(tCatalog, map);
+	transport::json_reader::JsonReader reader(handler, cin);
+	reader.HandleDataBase();
+	reader.HandleQuery();
+	reader.Print(cout);
+	return 0;
 }
