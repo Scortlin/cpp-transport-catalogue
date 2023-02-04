@@ -1,8 +1,6 @@
 #pragma once
-
 #include "svg.h"
 #include "domain.h"
-
 #include <iostream>
 #include <deque>
 #include <unordered_set>
@@ -17,8 +15,7 @@ namespace transport {
             template <typename PointInputIt>
             SphereProjector(PointInputIt points_begin, PointInputIt points_end,
                 double max_width, double max_height, double padding)
-                : padding_(padding)
-            {
+                : padding_(padding) {
                 if (points_begin == points_end) {
                     return;
                 }
@@ -28,25 +25,21 @@ namespace transport {
                 min_lon_ = left_it->lng;
                 const double max_lon = right_it->lng;
 
-
                 const auto [bottom_it, top_it] = std::minmax_element(
                     points_begin, points_end,
                     [](auto lhs, auto rhs) { return lhs.lat < rhs.lat; });
                 const double min_lat = bottom_it->lat;
                 max_lat_ = top_it->lat;
 
-
                 std::optional<double> width_zoom;
                 if (!(std::abs((max_lon - min_lon_)) < EPSILON)) {
                     width_zoom = (max_width - 2 * padding) / (max_lon - min_lon_);
                 }
 
-
                 std::optional<double> height_zoom;
                 if (!(std::abs((max_lat_ - min_lat)) < EPSILON)) {
                     height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
                 }
-
                 if (width_zoom && height_zoom) {
                     zoom_coeff_ = std::min(*width_zoom, *height_zoom);
                 }
@@ -64,6 +57,7 @@ namespace transport {
                     (max_lat_ - coords.lat) * zoom_coeff_ + padding_
                 };
             }
+
         private:
             double padding_;
             double min_lon_ = 0;
@@ -75,8 +69,8 @@ namespace transport {
         private:
             std::unordered_map<std::string, domain::SettingType> settings_;
             const std::set<const domain::Stop*, domain::StopCompare> GetAllStops(const std::deque<const domain::Bus*>& routes, std::unordered_set<geo::Coordinates, geo::Hasher>& allCoord);
-            svg::Circle DrawCircle(svg::Point point);
             std::pair<svg::Text, svg::Text> DrawText(const std::string& name, svg::Point point, svg::Color color, bool isBus = true);
+            svg::Circle DrawCircle(svg::Point point);
         public:
             MapRenderer() = default;
             void SetSettings(const std::unordered_map<std::string, domain::SettingType>& settings);

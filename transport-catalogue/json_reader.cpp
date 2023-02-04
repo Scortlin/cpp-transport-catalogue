@@ -1,6 +1,7 @@
 #include "json_reader.h"
 #include "svg.h"
 #include "json.h"
+#include "json_builder.h"
 
 #include <iostream>
 #include <string>
@@ -13,230 +14,7 @@
 #include <variant>
 #include <sstream>
 #include <execution>
-#include <string>
-#include <stack>
-#include <vector>
-#include "json.h"
 using namespace std;
-namespace json {
-	class KeyItemContext;
-	class SingleValueItemContext;
-	class DictItemContext;
-	class ArrayItemContext;
-
-	class Builder {
-	private:
-		Node root_;
-		stack<Node*> queue_;
-	public:
-		Builder() = default;
-		KeyItemContext Key(string key);
-		SingleValueItemContext Value(Node::Value value);
-		DictItemContext StartDict();
-		Builder& EndDict();
-		ArrayItemContext StartArray();
-		Builder& EndArray();
-		Node Build();
-	};
-
-	class ItemContext {
-	protected:
-		Builder& builder_;
-	public:
-		ItemContext(Builder& builder);
-		KeyItemContext Key(string key);
-		SingleValueItemContext Value(Node::Value value);
-		DictItemContext StartDict();
-		ArrayItemContext StartArray();
-		Builder& EndDict();
-		Builder& EndArray();
-		Node Build();
-	};
-
-	class KeyItemContext : public ItemContext {
-	public:
-		KeyItemContext(Builder& builder);
-		DictItemContext Value(Node::Value value);
-		KeyItemContext Key(string key) = delete;
-		Builder& EndDict() = delete;
-		Builder& EndArray() = delete;
-		Node Build() = delete;
-	};
-
-	class SingleValueItemContext : public ItemContext {
-	public:
-		SingleValueItemContext(Builder& builder);
-		KeyItemContext Key(string key) = delete;
-		SingleValueItemContext Value(Node::Value value) = delete;
-		DictItemContext StartDict() = delete;
-		ArrayItemContext StartArray() = delete;
-		Builder& EndDict() = delete;
-	};
-
-	class DictItemContext : public ItemContext {
-	public:
-		DictItemContext(Builder& builder);
-		SingleValueItemContext Value(Node::Value value) = delete;
-		DictItemContext StartDict() = delete;
-		ArrayItemContext StartArray() = delete;
-		Builder& EndArray() = delete;
-		Node Build() = delete;
-	};
-
-	class ArrayItemContext : public ItemContext {
-	public:
-		ArrayItemContext(Builder& builder);
-		ArrayItemContext Value(Node::Value value);
-		KeyItemContext Key(string key) = delete;
-		Builder& EndDict() = delete;
-		Node Build() = delete;
-	};
-}
-namespace json {
-
-	KeyItemContext Builder::Key(std::string key) {
-		if (queue_.empty() || !queue_.top()->IsMap()) {
-			throw logic_error("Dictonary not found, or value expected");
-		}
-		queue_.push(new Node(move(key)));
-		return { *this };
-	}
-
-	SingleValueItemContext Builder::Value(Node::Value value) {
-		if (queue_.empty() && root_.GetValue().index() != 0) {
-			throw logic_error("Object already ready");
-		}
-
-		if (queue_.empty()) {
-			root_.Swap(move(value));
-		}
-		else {
-			Node* last = queue_.top();
-			if (last->IsArray()) {
-				last->AddValue(move(value));
-			}
-			else {
-				string key = last->AsString();
-				queue_.pop();
-				queue_.top()->AddValue(last->AsString(), std::move(value));
-			}
-		}
-		return { *this };
-	}
-
-	DictItemContext Builder::StartDict() {
-		if (!queue_.empty() && queue_.top()->IsMap()) {
-			throw logic_error("Dictonary key expected");
-		}
-		queue_.push(new Node(Dict{}));
-		return { *this };
-	}
-
-	Builder& Builder::EndDict() {
-		if (queue_.empty() || !queue_.top()->IsMap()) {
-			throw logic_error("Array not found");
-		}
-
-		Node top = std::move(*(queue_.top()));
-		queue_.pop();
-
-		if (queue_.empty()) {
-			root_ = std::move(top);
-		}
-		else {
-			Node* parent = queue_.top();
-			if (parent->IsArray()) {
-				parent->AddValue(top.AsMap());
-			}
-			else {
-				string key = parent->AsString();
-				queue_.pop();
-				queue_.top()->AddValue(key, top.AsMap());
-			}
-		}
-		return *this;
-	}
-
-	ArrayItemContext Builder::StartArray() {
-		queue_.push(new Node(Array{}));
-		return { *this };
-	}
-
-	Builder& Builder::EndArray() {
-		if (queue_.empty() || !queue_.top()->IsArray()) {
-			throw logic_error("Array not found");
-		}
-		Node top = move(*(queue_.top()));
-		queue_.pop();
-		if (queue_.empty()) {
-			root_ = std::move(top);
-		}
-		else {
-			Node* parent = queue_.top();
-			if (parent->IsArray()) {
-				parent->AddValue(top.AsArray());
-			}
-			else {
-				string key = parent->AsString();
-				queue_.pop();
-				queue_.top()->AddValue(key, top.AsArray());
-			}
-		}
-		return *this;
-	}
-
-	Node Builder::Build() {
-		if (!queue_.empty() || root_.GetValue().index() == 0) {
-			throw logic_error("Object not ready");
-		}
-		return root_;
-	}
-
-	ItemContext::ItemContext(Builder& builder) : builder_(builder) {}
-	KeyItemContext ItemContext::Key(string key) {
-		return builder_.Key(key);
-	}
-
-	SingleValueItemContext ItemContext::Value(Node::Value value) {
-		return builder_.Value(value);
-	}
-
-	DictItemContext ItemContext::StartDict() {
-		return builder_.StartDict();
-	}
-
-	ArrayItemContext ItemContext::StartArray() {
-		return builder_.StartArray();
-	}
-
-	Builder& ItemContext::EndDict() {
-		return builder_.EndDict();
-	}
-
-	Builder& ItemContext::EndArray() {
-		return builder_.EndArray();
-	}
-
-	Node ItemContext::Build() {
-		return builder_.Build();
-	}
-
-	KeyItemContext::KeyItemContext(Builder& builder) : ItemContext(builder) {}
-	SingleValueItemContext::SingleValueItemContext(Builder& builder) : ItemContext(builder) {}
-	DictItemContext::DictItemContext(Builder& builder) : ItemContext(builder) {}
-	ArrayItemContext::ArrayItemContext(Builder& builder) : ItemContext(builder) {}
-
-	DictItemContext KeyItemContext::Value(Node::Value value) {
-		ItemContext::Value(value);
-		return { builder_ };
-	}
-
-	ArrayItemContext ArrayItemContext::Value(Node::Value value) {
-		ItemContext::Value(value);
-		return { builder_ };
-	}
-}
-using namespace std::string_literals;
 
 namespace transport {
 	namespace json_reader {
@@ -256,7 +34,6 @@ namespace transport {
 
 		void JsonReader::PrepareSettings(const json::Node jsonSettings) {
 			unordered_map<string, domain::SettingType> settings;
-
 			for (const auto& [key, value] : jsonSettings.AsMap()) {
 				if (key == "color_palette") {
 					vector<svg::Color> colorPalette;
@@ -274,7 +51,6 @@ namespace transport {
 								colorPalette.push_back(svg::Color{ svg::Rgba{ static_cast<uint8_t>(colors[0].AsInt()),  static_cast<uint8_t>(colors[1].AsInt()),  static_cast<uint8_t>(colors[2].AsInt()), colors[3].AsDouble() } });
 							}
 						}
-
 					}
 					settings["color_palette"] = colorPalette;
 				}
@@ -295,7 +71,7 @@ namespace transport {
 				if (key == "bus_label_offset" || key == "stop_label_offset") {
 					if (value.IsArray()) {
 						if (value.AsArray().front().IsDouble() && value.AsArray().back().IsDouble()) {
-							settings[key] = pair<double, double>{ value.AsArray().front().AsDouble(), value.AsArray().back().AsDouble() };
+							settings[key] = std::pair<double, double>{ value.AsArray().front().AsDouble(), value.AsArray().back().AsDouble() };
 						}
 					}
 				}
@@ -434,7 +210,7 @@ namespace transport {
 			nodeResul_ = json::Node(result);
 		}
 
-		void JsonReader::Print(std::ostream& output) {
+		void JsonReader::Print(ostream& output) {
 			json::PrintNode(nodeResul_, output);
 		}
 	}

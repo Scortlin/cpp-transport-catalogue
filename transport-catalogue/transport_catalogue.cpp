@@ -12,7 +12,7 @@ namespace transport {
 		TransportCatalogue::TransportCatalogue() {}
 
 		void TransportCatalogue::AddStop(string_view stopName, geo::Coordinates coordinates) {
-			stopStorage.push_back(domain::Stop{ string(stopName), coordinates });
+			stopStorage.push_back(domain::Stop{ std::string(stopName), coordinates });
 			stops[stopStorage.back().name] = &stopStorage.back();
 		}
 
@@ -56,7 +56,6 @@ namespace transport {
 					}
 					result.curvature += curvature;
 				}
-
 				if (!busInfo->loope) {
 					for (auto it = (busInfo->stops.end() - 1); it != busInfo->stops.begin(); --it) {
 						double curvature = geo::ComputeDistance((*it)->coord, (*(it - 1))->coord);
@@ -69,6 +68,7 @@ namespace transport {
 					}
 					result.stops = busInfo->stops.size() * 2 - 1;
 				}
+
 				deque<const domain::Stop*> st = busInfo->stops;
 				sort(st.begin(), st.end());
 				auto last = unique(st.begin(), st.end());
@@ -113,7 +113,8 @@ namespace transport {
 					result.push_back(bus);
 				}
 			}
-			sort(result.begin(), result.end(), [](const domain::Bus* lhs, const domain::Bus* rhs) {return lhs->name < rhs->name; });
+			sort(result.begin(), result.end(), [](const domain::Bus* lhs, const domain::Bus* rhs) {
+				return lhs->name < rhs->name;});
 			return result;
 		}
 	}

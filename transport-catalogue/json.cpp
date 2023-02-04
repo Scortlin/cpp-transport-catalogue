@@ -1,11 +1,12 @@
 #include "json.h"
 
 using namespace std;
-
 namespace json {
     namespace {
         using Number = variant<nullptr_t, bool, int, double>;
+
         Node LoadNode(istream& input);
+
         Node LoadArray(istream& input) {
             Array result;
             char c;
@@ -20,11 +21,13 @@ namespace json {
             }
             return Node(move(result));
         }
+
         Node LoadString(std::istream& input) {
             using namespace std::literals;
-            auto it = istreambuf_iterator<char>(input);
-            auto end = istreambuf_iterator<char>();
-            std::string s;
+
+            auto it = std::istreambuf_iterator<char>(input);
+            auto end = std::istreambuf_iterator<char>();
+            string s;
             while (true) {
                 if (it == end) {
                     throw ParsingError("String parsing error");
@@ -57,7 +60,7 @@ namespace json {
                         s.push_back('\\');
                         break;
                     default:
-                        throw ParsingError("Unrecognized sequence"s + escaped_char);
+                        throw ParsingError("Unrecognized escape sequence "s + escaped_char);
                     }
                 }
                 else if (ch == '\n' || ch == '\r') {
@@ -82,17 +85,18 @@ namespace json {
                 input >> c;
                 result.insert({ move(key), LoadNode(input) });
             }
+
             if (c != '}') {
                 throw ParsingError("Map parsing error");
             }
             return Node(move(result));
         }
 
-        Number LoadNumber(std::istream& input) {
+        Number LoadNumber(istream& input) {
             using namespace std::literals;
             string parsed_num;
             if (input.peek() == 'n') {
-                string str;
+                std::string str;
                 for (int i = 0; i < 4; ++i) {
                     str.push_back(static_cast<char>(input.get()));
                 }
@@ -103,7 +107,7 @@ namespace json {
             }
 
             if (input.peek() == 't') {
-                std::string str;
+                string str;
                 for (int i = 0; i < 4; ++i) {
                     str.push_back(static_cast<char>(input.get()));
                 }
@@ -112,9 +116,8 @@ namespace json {
                 }
                 return true;
             }
-
             if (input.peek() == 'f') {
-                std::string str;
+                string str;
                 for (int i = 0; i < 5; ++i) {
                     str.push_back(static_cast<char>(input.get()));
                 }
@@ -123,7 +126,6 @@ namespace json {
                 }
                 return false;
             }
-
             auto read_char = [&parsed_num, &input] {
                 parsed_num += static_cast<char>(input.get());
                 if (!input) {
@@ -131,10 +133,10 @@ namespace json {
                 }
             };
             auto read_digits = [&input, read_char] {
-                if (!std::isdigit(input.peek())) {
+                if (!isdigit(input.peek())) {
                     throw ParsingError("A digit is expected"s);
                 }
-                while (std::isdigit(input.peek())) {
+                while (isdigit(input.peek())) {
                     read_char();
                 }
             };
@@ -142,18 +144,21 @@ namespace json {
             if (input.peek() == '-') {
                 read_char();
             }
+
             if (input.peek() == '0') {
                 read_char();
             }
             else {
                 read_digits();
             }
+
             bool is_int = true;
             if (input.peek() == '.') {
                 read_char();
                 read_digits();
                 is_int = false;
             }
+
             if (int ch = input.peek(); ch == 'e' || ch == 'E') {
                 read_char();
                 if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -170,7 +175,7 @@ namespace json {
                     }
                     catch (...) {}
                 }
-                return std::stod(parsed_num);
+                return stod(parsed_num);
             }
             catch (...) {
                 throw ParsingError("Failed to convert "s + parsed_num + " to number"s);
@@ -232,11 +237,11 @@ namespace json {
     }
 
     bool Node::IsString() const {
-        return holds_alternative<string>(*this);
+        return holds_alternative<std::string>(*this);
     }
 
     bool Node::IsNull() const {
-        return holds_alternative<nullptr_t>(*this);
+        return holds_alternative<std::nullptr_t>(*this);
     }
 
     bool Node::IsArray() const {
@@ -286,12 +291,10 @@ namespace json {
         if (!IsPureDouble() && !IsInt()) {
             throw logic_error("It is not dooble");
         }
-
         if (IsPureDouble()) {
-            return std::get<double>(*this);
+            return get<double>(*this);
         }
-
-        return std::get<int>(*this);
+        return get<int>(*this);
     }
 
     bool Node::Swap(Value&& val) {
@@ -303,8 +306,9 @@ namespace json {
         if (IsMap()) {
             return false;
         }
+
         if (IsArray()) {
-            Array& itemAr = std::get<Array>(*this);
+            Array& itemAr = get<Array>(*this);
             Node newNode;
             newNode.Swap(move(val));
             itemAr.push_back(move(newNode));
@@ -314,14 +318,14 @@ namespace json {
         return true;
     }
 
-    bool Node::AddValue(std::string key, Value&& val) {
+    bool Node::AddValue(string key, Value&& val) {
         if (!IsMap()) {
             return false;
         }
         Dict& itemDict = get<Dict>(*this);
         Node newNode;
         newNode.Swap(move(val));
-        itemDict[key] = std::move(newNode);
+        itemDict[key] = move(newNode);
         return true;
     }
 
@@ -332,10 +336,12 @@ namespace json {
     const Node& Document::GetRoot() const {
         return root_;
     }
+
     Document Load(istream& input) {
         return Document{ LoadNode(input) };
     }
-    void PrintArray(const Array& container, std::ostream& output) {
+
+    void PrintArray(const Array& container, ostream& output) {
         output << "[";
         bool first = true;
         for (const Node& node : container) {
@@ -348,7 +354,7 @@ namespace json {
         output << "]";
     }
 
-    void PrintMap(const Dict& container, std::ostream& output) {
+    void PrintMap(const Dict& container, ostream& output) {
         output << "{";
         bool first = true;
         for (const auto& [key, value] : container) {
@@ -362,8 +368,8 @@ namespace json {
         output << "}";
     }
 
-    void PrintString(const std::string& str, std::ostream& output) {
-        std::unordered_set<char> specseq{ '\\', '\'', '"' };
+    void PrintString(const string& str, ostream& output) {
+        unordered_set<char> specseq{ '\\', '\'', '"' };
         for (const char ch : str) {
             if (ch == '\r') {
                 output << "\\r";
@@ -380,7 +386,7 @@ namespace json {
         }
     }
 
-    void PrintNode(const Node& root, std::ostream& output) {
+    void PrintNode(const Node& root, ostream& output) {
         if (root.IsInt()) {
             output << root.AsInt();
         }
@@ -411,7 +417,7 @@ namespace json {
         }
     }
 
-    void Print(const Document& doc, std::ostream& output) {
+    void Print(const Document& doc, ostream& output) {
         PrintNode(doc.GetRoot(), output);
     }
 }

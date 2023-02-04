@@ -31,7 +31,7 @@ namespace transport {
 			return catalog_.GetRoute(busName);
 		}
 
-		optional<const deque<string_view>> RequestHandler::GetStopBuses(const string_view& stopName) {
+		optional<const deque<std::string_view>> RequestHandler::GetStopBuses(const string_view& stopName) {
 			try {
 				const domain::Stop* stop = catalog_.StopFind(stopName);
 				return catalog_.GetStopBuses(stop->name);
@@ -39,11 +39,13 @@ namespace transport {
 			catch (...) {
 				return nullopt;
 			}
+
 		}
 
 		void RequestHandler::SetRenderSettings(const unordered_map<string, domain::SettingType>& settings) {
 			map_.SetSettings(settings);
 		}
+
 		void RequestHandler::DrawMap(ostream& out) {
 			map_.Draw(out, catalog_.GetAllRoutes());
 		}

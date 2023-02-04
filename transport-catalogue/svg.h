@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -8,9 +7,6 @@
 #include <unordered_map>
 #include <optional>
 #include <variant>
-#include <cstdint>
-
-using namespace std::string_literals;
 
 namespace svg {
     struct Rgb {
@@ -45,6 +41,8 @@ namespace svg {
             out << "rgba(" << color.red + 0 << ',' << color.green + 0 << ',' << color.blue + 0 << ',' << color.opacity << ")";
         }
     };
+
+
     using Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
     inline const Color NoneColor = "none";
 
@@ -92,6 +90,7 @@ namespace svg {
                 out.put(' ');
             }
         }
+
         std::ostream& out;
         int indent_step = 0;
         int indent = 0;
@@ -101,9 +100,11 @@ namespace svg {
     public:
         void Render(const RenderContext& context) const;
         virtual ~Object() = default;
+
     private:
         virtual void RenderObject(const RenderContext& context) const = 0;
     };
+
     class ObjectContainer {
     public:
         template<typename Obj>
@@ -112,6 +113,7 @@ namespace svg {
         }
         virtual void AddPtr(std::unique_ptr<Object>&& obj) = 0;
     };
+
     class Drawable {
     public:
         virtual ~Drawable() = default;
@@ -196,6 +198,7 @@ namespace svg {
         T& AsOwner() {
             return static_cast<T&>(*this);
         }
+
         std::optional<Color> fill_color_;
         std::optional<Color> stroke_color_;
         std::optional<double> stroke_width_;
@@ -224,23 +227,23 @@ namespace svg {
 
     class Text final : public Object, public PathProps<Text> {
     public:
+        Text& SetPosition(Point pos);
+        Text& SetOffset(Point offset);
         Text& SetFontSize(uint32_t size);
         Text& SetFontFamily(std::string font_family);
         Text& SetFontWeight(std::string font_weight);
-        Text& SetPosition(Point pos);
-        Text& SetOffset(Point offset);
         Text& SetData(std::string data);
         std::string PrepareText(std::string data);
     private:
+        void RenderObject(const RenderContext& context) const override;
+        Point pos_ = { 0.0, 0.0 };
         Point offset_ = { 0.0, 0.0 };
         uint32_t size_ = 1;
         std::string font_family_;
         std::string font_weight_;
         std::string data_ = "";
-        void RenderObject(const RenderContext& context) const override;
-        Point pos_ = { 0.0, 0.0 };
-
     };
+
     class Document : public ObjectContainer {
     public:
         Document() = default;

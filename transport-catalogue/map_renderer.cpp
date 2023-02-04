@@ -2,19 +2,19 @@
 #include "domain.h"
 #include "map_renderer.h"
 
-#include <algorithm>
-#include <variant>
-#include <cctype>
 #include <iostream>
 #include <deque>
 #include <vector>
 #include <unordered_set>
+#include <algorithm>
+#include <variant>
+#include <cctype>
 #include <set>
 using namespace std;
 namespace transport {
     namespace render {
-        void MapRenderer::SetSettings(const std::unordered_map<std::string, domain::SettingType>& settings) {
-            settings_ = std::move(settings);
+        void MapRenderer::SetSettings(const unordered_map<string, domain::SettingType>& settings) {
+            settings_ = move(settings);
         }
 
         const set<const domain::Stop*, domain::StopCompare> MapRenderer::GetAllStops(const deque<const domain::Bus*>& routes, unordered_set<geo::Coordinates, geo::Hasher>& allCoord) {
@@ -29,7 +29,7 @@ namespace transport {
         }
 
         pair<svg::Text, svg::Text> MapRenderer::DrawText(const string& name, svg::Point point, svg::Color color, bool isBus) {
-            double strokeWidth = std::get<double>(settings_["underlayer_width"]);
+            double strokeWidth = get<double>(settings_["underlayer_width"]);
             int fontSize;
             pair<double, double> offset;
             if (isBus) {
@@ -37,12 +37,13 @@ namespace transport {
                 fontSize = get<double>(settings_["bus_label_font_size"]);
             }
             else {
-                offset = get<std::pair<double, double>>(settings_["stop_label_offset"]);
+                offset = get<pair<double, double>>(settings_["stop_label_offset"]);
                 fontSize = get<double>(settings_["stop_label_font_size"]);
             }
             svg::Color textColor = get<svg::Color>(settings_["underlayer_color"]);
-            svg::Text underText;
+
             svg::Text text;
+            svg::Text underText;
             underText.SetFillColor(textColor)
                 .SetPosition(point)
                 .SetOffset(svg::Point{ offset.first, offset.second })
@@ -53,12 +54,14 @@ namespace transport {
                 .SetData(name)
                 .SetStrokeLineCap(svg::StrokeLineCap::ROUND)
                 .SetStrokeLineJoin(svg::StrokeLineJoin::ROUND);
+
             text.SetFillColor(color)
                 .SetPosition(point)
                 .SetOffset(svg::Point{ offset.first, offset.second })
                 .SetFontSize(fontSize)
                 .SetFontFamily("Verdana")
                 .SetData(name);
+
             if (isBus) {
                 underText.SetFontWeight("bold");
                 text.SetFontWeight("bold");
@@ -68,7 +71,7 @@ namespace transport {
 
         svg::Circle MapRenderer::DrawCircle(svg::Point point) {
             svg::Circle circle;
-            double radius = get<double>(settings_["stop_radius"]);
+            double radius = std::get<double>(settings_["stop_radius"]);
             circle.SetCenter(point).SetRadius(radius).SetFillColor("white");
             return circle;
         }
@@ -99,15 +102,18 @@ namespace transport {
                 if (!bus->loope && firstPoint != lastPoint) {
                     texts.push_back(DrawText(bus->name, proj(lastPoint), colorPalette[colorIndex]));
                 }
+
                 for (size_t i = 0; i < bus->stops.size(); ++i) {
                     svg::Point stopPoint = proj(bus->stops[i]->coord);
                     route.AddPoint(stopPoint);
                 }
+
                 if (!bus->loope && bus->stops.size() >= 2) {
                     for (int i = (bus->stops.size() - 2); i >= 0; --i) {
                         route.AddPoint(proj(bus->stops[i]->coord));
                     }
                 }
+
                 route.SetStrokeColor(colorPalette[colorIndex])
                     .SetStrokeWidth(lineWidth)
                     .SetFillColor("none")

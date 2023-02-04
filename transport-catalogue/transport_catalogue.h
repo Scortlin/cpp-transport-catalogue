@@ -10,10 +10,10 @@ namespace transport {
 	namespace catalog {
 		class TransportCatalogue {
 		private:
-			std::unordered_map<std::string_view, domain::Bus*> routes;
-			std::unordered_map<std::string_view, domain::Stop*> stops;
 			std::deque<domain::Stop> stopStorage;
 			std::deque<domain::Bus> busStorage;
+			std::unordered_map<std::string_view, domain::Bus*> routes;
+			std::unordered_map<std::string_view, domain::Stop*> stops;
 			std::unordered_map<std::pair<domain::Stop*, domain::Stop*>, int, domain::StopLengthHasher> distanceBwStops;
 		public:
 			explicit TransportCatalogue();

@@ -1,9 +1,6 @@
 #include "svg.h"
 using namespace std;
 namespace svg {
-
-    using namespace std::literals;
-
     void Object::Render(const RenderContext& context) const {
         context.RenderIndent();
         RenderObject(context);
@@ -100,8 +97,8 @@ namespace svg {
         out << "</text>";
     }
 
-    std::string Text::PrepareText(string data) {
-        std::unordered_map<char, string> vocablary = {
+    string Text::PrepareText(string data) {
+        unordered_map<char, string> vocablary = {
             {'&', "&amp;"},
             {'"', "&quot;"},
             {'<', "&lt;"},

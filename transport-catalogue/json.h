@@ -76,6 +76,7 @@ namespace json {
     }
 
     Document Load(std::istream& input);
+
     void PrintArray(const Array& container, std::ostream& output);
     void PrintMap(const Dict& container, std::ostream& output);
     void PrintString(const std::string& str, std::ostream& output);

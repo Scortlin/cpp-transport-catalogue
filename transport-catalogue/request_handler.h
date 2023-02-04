@@ -18,13 +18,13 @@ namespace transport {
 			catalog::TransportCatalogue& catalog_;
 			render::MapRenderer& map_;
 		public:
-			std::optional<const std::deque<std::string_view>> GetStopBuses(const std::string_view& stopName);
-			void SetRenderSettings(const std::unordered_map<std::string, domain::SettingType>& settings);
 			RequestHandler(catalog::TransportCatalogue& catalog, render::MapRenderer& map);
 			void CreateCatalog(const std::unordered_map<std::string_view, std::pair<std::deque<std::string_view>, bool>>& buses,
 				const std::unordered_map<std::string_view, std::pair<double, double>>& stops,
 				const std::vector<domain::DistanceBwStops>& stopsDistance);
 			const domain::Route GetRoute(const std::string_view& busName);
+			std::optional<const std::deque<std::string_view>> GetStopBuses(const std::string_view& stopName);
+			void SetRenderSettings(const std::unordered_map<std::string, domain::SettingType>& settings);
 			void DrawMap(std::ostream& out);
 		};
 	}
