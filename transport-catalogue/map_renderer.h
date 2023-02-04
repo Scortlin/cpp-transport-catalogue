@@ -76,10 +76,10 @@ namespace transport {
             std::unordered_map<std::string, domain::SettingType> settings_;
             const std::set<const domain::Stop*, domain::StopCompare> GetAllStops(const std::deque<const domain::Bus*>& routes, std::unordered_set<geo::Coordinates, geo::Hasher>& allCoord);
             svg::Circle DrawCircle(svg::Point point);
-            std::pair<svg::Text, svg::Text> DrawText(const std::string name, svg::Point point, svg::Color color, bool isBus = true);
+            std::pair<svg::Text, svg::Text> DrawText(const std::string& name, svg::Point point, svg::Color color, bool isBus = true);
         public:
             MapRenderer() = default;
-            void SetSettings(std::unordered_map<std::string, domain::SettingType> settings);
+            void SetSettings(const std::unordered_map<std::string, domain::SettingType>& settings);
             void Draw(std::ostream& out, std::deque<const domain::Bus*> routes);
         };
     }

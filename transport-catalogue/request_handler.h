@@ -19,7 +19,7 @@ namespace transport {
 			render::MapRenderer& map_;
 		public:
 			std::optional<const std::deque<std::string_view>> GetStopBuses(const std::string_view& stopName);
-			void SetRenderSettings(std::unordered_map<std::string, domain::SettingType> settings);
+			void SetRenderSettings(const std::unordered_map<std::string, domain::SettingType>& settings);
 			RequestHandler(catalog::TransportCatalogue& catalog, render::MapRenderer& map);
 			void CreateCatalog(const std::unordered_map<std::string_view, std::pair<std::deque<std::string_view>, bool>>& buses,
 				const std::unordered_map<std::string_view, std::pair<double, double>>& stops,

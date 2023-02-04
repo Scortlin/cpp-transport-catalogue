@@ -41,7 +41,7 @@ namespace transport {
 			}
 		}
 
-		void RequestHandler::SetRenderSettings(unordered_map<string, domain::SettingType> settings) {
+		void RequestHandler::SetRenderSettings(const unordered_map<string, domain::SettingType>& settings) {
 			map_.SetSettings(settings);
 		}
 		void RequestHandler::DrawMap(ostream& out) {

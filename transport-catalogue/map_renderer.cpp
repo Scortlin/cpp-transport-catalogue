@@ -13,7 +13,7 @@
 using namespace std;
 namespace transport {
     namespace render {
-        void MapRenderer::SetSettings(std::unordered_map<std::string, domain::SettingType> settings) {
+        void MapRenderer::SetSettings(const std::unordered_map<std::string, domain::SettingType>& settings) {
             settings_ = std::move(settings);
         }
 
@@ -28,7 +28,7 @@ namespace transport {
             return result;
         }
 
-        pair<svg::Text, svg::Text> MapRenderer::DrawText(string name, svg::Point point, svg::Color color, bool isBus) {
+        pair<svg::Text, svg::Text> MapRenderer::DrawText(const string& name, svg::Point point, svg::Color color, bool isBus) {
             double strokeWidth = std::get<double>(settings_["underlayer_width"]);
             int fontSize;
             pair<double, double> offset;
