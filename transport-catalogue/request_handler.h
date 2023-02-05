@@ -18,7 +18,7 @@ namespace transport {
 		private:
 			catalog::TransportCatalogue& catalog_;
 			render::MapRenderer map_;
-			route::Router route_;
+			route::TransportRouter route_;
 		public:
 			RequestHandler(catalog::TransportCatalogue& catalog);
 			void CreateCatalog(const std::unordered_map<std::string_view, std::pair<std::deque<std::string_view>, bool>>& buses,

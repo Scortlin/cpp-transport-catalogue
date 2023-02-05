@@ -9,33 +9,35 @@
 #include <vector>
 #include <algorithm>
 #include <string_view>
-
+const int MINUTES_IN_HOUR = 60;
+const int METERS_IN_KILOMETR = 1000;
 using namespace std;
 namespace transport {
 	namespace route {
 
-		void Router::CreateWaitEdge(graph::VertexId fromId, graph::VertexId toId, string_view name, double weight) {
+		void TransportRouter::CreateWaitEdge(graph::VertexId fromId, graph::VertexId toId, string_view name, double weight) {
 			auto edgeExist = graph.GetIncidentEdges(fromId);
 			if (edgeExist.begin() == edgeExist.end()) {
 				graph.AddEdge(graph::Edge<double> { fromId, toId, name, name, name, "Wait", weight });
 			}
 		}
 
-		double Router::CalculateEdgeWeight(const transport::domain::Stop* from, const transport::domain::Stop* to, transport::catalog::TransportCatalogue& catalog) {
-			double transformSpeed = settings_["bus_velocity"] * 1000 / 60;
+		double TransportRouter::CalculateEdgeWeight(const transport::domain::Stop* from, const transport::domain::Stop* to, transport::catalog::TransportCatalogue& catalog) {
+			double transformSpeed = settings_["bus_velocity"] * METERS_IN_KILOMETR / MINUTES_IN_HOUR;
 			auto distance = catalog.GetDistance(from, to);
 			return (distance / transformSpeed);
 		}
 
-		void Router::CreateRoutes(transport::catalog::TransportCatalogue& catalog) {
+		void TransportRouter::CreateRoutes(transport::catalog::TransportCatalogue& catalog) {
 			size_t uniqueStopsCount = catalog.GetUniqueStopCount();
 			graph::DirectedWeightedGraph<double> result(uniqueStopsCount * 2);
 			graph = move(result);
 			deque<const domain::Bus*> allRoutes = catalog.GetAllRoutes();
 			double waitTime = settings_["bus_wait_time"];
+
 			for (const domain::Bus* itemRoute : allRoutes) {
 				for (auto itemStopIt = itemRoute->stops.begin(); itemStopIt != itemRoute->stops.end() - 1; ++itemStopIt) {
-					double derectWeight = 0;
+					double directWeight = 0;
 					double backWeight = 0;
 					int stopCount = 0;
 					auto nextStopIt = itemStopIt + 1;
@@ -49,8 +51,8 @@ namespace transport {
 						graph::VertexId destinationVertexId = (**nextStopIt).id;
 						graph::VertexId innerWaitVertexId = (**nextStopIt).id + uniqueStopsCount;
 						CreateWaitEdge(destinationVertexId, innerWaitVertexId, (**nextStopIt).name, waitTime);
-						derectWeight += CalculateEdgeWeight(stopPair.first, stopPair.second, catalog);
-						graph.AddEdge(graph::Edge<double> { waitVertextId, destinationVertexId, (**itemStopIt).name, (**nextStopIt).name, itemRoute->name, "Bus", derectWeight, stopCount });
+						directWeight += CalculateEdgeWeight(stopPair.first, stopPair.second, catalog);
+						graph.AddEdge(graph::Edge<double> { waitVertextId, destinationVertexId, (**itemStopIt).name, (**nextStopIt).name, itemRoute->name, "Bus", directWeight, stopCount });
 						if (!itemRoute->loope) {
 							backWeight += CalculateEdgeWeight(stopPair.second, stopPair.first, catalog);
 							graph.AddEdge(graph::Edge<double> { innerWaitVertexId, departureVertextId, (**nextStopIt).name, (**itemStopIt).name, itemRoute->name, "Bus", backWeight, stopCount });
@@ -63,7 +65,7 @@ namespace transport {
 			routerFinder = make_unique<graph::Router<double>>(graph);
 		}
 
-		void Router::FindRoute(const domain::Stop* from, const domain::Stop* to) {
+		void TransportRouter::FindRoute(const domain::Stop* from, const domain::Stop* to) {
 			optional<graph::Router<double>::RouteInfo> result = routerFinder->BuildRoute(from->id, to->id);
 			readyRoute.reset();
 			if (result.has_value()) {
@@ -78,10 +80,10 @@ namespace transport {
 			}
 		}
 
-		void Router::SetSettings(unordered_map<string, double>&& settings) {
+		void TransportRouter::SetSettings(unordered_map<string, double>&& settings) {
 			settings_ = move(settings);
 		}
-		const optional<domain::Trip>& Router::GetReadyRoute()const {
+		const optional<domain::Trip>& TransportRouter::GetReadyRoute()const {
 			return readyRoute;
 		}
 	}
