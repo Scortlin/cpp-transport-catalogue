@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -7,6 +8,8 @@
 #include <unordered_map>
 #include <optional>
 #include <variant>
+
+using namespace std::string_literals;
 
 namespace svg {
     struct Rgb {
@@ -42,16 +45,13 @@ namespace svg {
         }
     };
 
-
     using Color = std::variant<std::monostate, std::string, Rgb, Rgba>;
     inline const Color NoneColor = "none";
-
     enum class StrokeLineCap {
         BUTT,
         ROUND,
         SQUARE,
     };
-
     enum class StrokeLineJoin {
         ARCS,
         BEVEL,
@@ -59,7 +59,6 @@ namespace svg {
         MITER_CLIP,
         ROUND,
     };
-
     struct Point {
         Point() = default;
         Point(double x, double y)
@@ -150,7 +149,6 @@ namespace svg {
 
     protected:
         ~PathProps() = default;
-
         void RenderAttrs(std::ostream& out) const {
             using namespace std::literals;
 

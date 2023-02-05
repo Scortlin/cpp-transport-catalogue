@@ -1,19 +1,20 @@
-#include "json_reader.h"
-#include "svg.h"
 #include "json.h"
 #include "json_builder.h"
+#include "json_reader.h"
+#include "svg.h"
 
+#include <string_view>
+#include <utility>
+#include <optional>
 #include <iostream>
 #include <string>
 #include <unordered_map>
 #include <deque>
 #include <vector>
-#include <string_view>
-#include <utility>
-#include <optional>
 #include <variant>
 #include <sstream>
 #include <execution>
+
 using namespace std;
 
 namespace transport {
@@ -28,6 +29,10 @@ namespace transport {
 			query_ = jsonObject.GetRoot().AsMap().at("stat_requests");
 			try {
 				PrepareSettings(jsonObject.GetRoot().AsMap().at("render_settings"));
+			}
+			catch (...) {}
+			try {
+				PrepareRouteSettings(jsonObject.GetRoot().AsMap().at("routing_settings"));
 			}
 			catch (...) {}
 		}
@@ -71,7 +76,7 @@ namespace transport {
 				if (key == "bus_label_offset" || key == "stop_label_offset") {
 					if (value.IsArray()) {
 						if (value.AsArray().front().IsDouble() && value.AsArray().back().IsDouble()) {
-							settings[key] = std::pair<double, double>{ value.AsArray().front().AsDouble(), value.AsArray().back().AsDouble() };
+							settings[key] = pair<double, double>{ value.AsArray().front().AsDouble(), value.AsArray().back().AsDouble() };
 						}
 					}
 				}
@@ -80,6 +85,16 @@ namespace transport {
 				}
 			}
 			handler_.SetRenderSettings(settings);
+		}
+
+		void JsonReader::PrepareRouteSettings(const json::Node routeSettings) {
+			unordered_map<string, double> settings;
+			for (const auto& [key, value] : routeSettings.AsMap()) {
+				if (value.IsDouble()) {
+					settings[key] = value.AsDouble();
+				}
+			}
+			handler_.SetRouteSettings(settings);
 		}
 
 		void JsonReader::HandleDataBase() {
@@ -193,6 +208,57 @@ namespace transport {
 				.Build());
 		}
 
+		void JsonReader::HandleRouteQuery(const json::Node& route, json::Array& saveConatiner) {
+			int id = route.AsMap().at("id").AsInt();
+			string_view from = route.AsMap().at("from").AsString();
+			string_view to = route.AsMap().at("to").AsString();
+			const optional<domain::Trip>& result = handler_.FindRoute(from, to);
+			if (result.has_value()) {
+				json::Array routeItems;
+				const domain::Trip& trip = result.value();
+				for (const domain::TripAction item : trip.items) {
+					json::Builder builder = json::Builder{};
+					auto itemBuilder = builder.StartDict();
+					if (item.type == "Wait") {
+						itemBuilder.Key("stop_name"s).Value(string(item.stopBusName));
+					}
+					else {
+						itemBuilder.Key("bus"s)
+							.Value(std::string(item.stopBusName))
+							.Key("span_count"s)
+							.Value(item.spanCount);
+					}
+					itemBuilder.Key("time"s)
+						.Value(item.time)
+						.Key("type"s)
+						.Value(item.type)
+						.EndDict();
+					json::Node readyResult = builder.Build();
+					routeItems.push_back(readyResult);
+				}
+				saveConatiner.push_back(json::Builder{}
+					.StartDict()
+					.Key("request_id"s)
+					.Value(id)
+					.Key("total_time"s)
+					.Value(trip.totalTime)
+					.Key("items"s)
+					.Value(routeItems)
+					.EndDict()
+					.Build());
+			}
+			else {
+				saveConatiner.push_back(json::Builder{}
+					.StartDict()
+					.Key("request_id"s)
+					.Value(id)
+					.Key("error_message"s)
+					.Value("not found"s)
+					.EndDict()
+					.Build());
+			}
+		}
+
 		void JsonReader::HandleQuery() {
 			json::Array result;
 			for (const json::Node& item : query_->AsArray()) {
@@ -205,6 +271,9 @@ namespace transport {
 				}
 				else if (type == "Map") {
 					HandleMapQuery(item, result);
+				}
+				else if (type == "Route") {
+					HandleRouteQuery(item, result);
 				}
 			}
 			nodeResul_ = json::Node(result);

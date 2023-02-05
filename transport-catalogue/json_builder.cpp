@@ -6,7 +6,7 @@
 using namespace std;
 namespace json {
 
-	KeyItemContext Builder::Key(string key) {
+	KeyItemContext Builder::Key(const string& key) {
 		if (queue_.empty() || !queue_.top()->IsMap()) {
 			throw logic_error("Dictonary not found, or value expected");
 		}
@@ -18,6 +18,7 @@ namespace json {
 		if (queue_.empty() && root_.GetValue().index() != 0) {
 			throw logic_error("Object already ready");
 		}
+
 		if (queue_.empty()) {
 			root_.Swap(move(value));
 		}
@@ -32,7 +33,7 @@ namespace json {
 				queue_.top()->AddValue(last->AsString(), move(value));
 			}
 		}
-		return {*this};
+		return { *this };
 	}
 
 	DictItemContext Builder::StartDict() {
@@ -40,15 +41,17 @@ namespace json {
 			throw logic_error("Dictonary key expected");
 		}
 		queue_.push(new Node(Dict{}));
-		return {*this};
+		return { *this };
 	}
 
 	Builder& Builder::EndDict() {
 		if (queue_.empty() || !queue_.top()->IsMap()) {
 			throw logic_error("Array not found");
 		}
+
 		Node top = move(*(queue_.top()));
 		queue_.pop();
+
 		if (queue_.empty()) {
 			root_ = move(top);
 		}
@@ -63,13 +66,15 @@ namespace json {
 				queue_.top()->AddValue(key, top.AsMap());
 			}
 		}
+
 		return *this;
 	}
 
 	ArrayItemContext Builder::StartArray() {
 		queue_.push(new Node(Array{}));
-		return {*this};
+		return { *this };
 	}
+
 	Builder& Builder::EndArray() {
 		if (queue_.empty() || !queue_.top()->IsArray()) {
 			throw logic_error("Array not found");
@@ -102,7 +107,7 @@ namespace json {
 	}
 
 	ItemContext::ItemContext(Builder& builder) : builder_(builder) {}
-	KeyItemContext ItemContext::Key(string key) {
+	KeyItemContext ItemContext::Key(const std::string& key) {
 		return builder_.Key(key);
 	}
 

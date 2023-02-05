@@ -10,7 +10,7 @@
 using namespace std;
 namespace transport {
 	namespace request {
-		RequestHandler::RequestHandler(catalog::TransportCatalogue& catalog, render::MapRenderer& map) : catalog_(catalog), map_(map) {}
+		RequestHandler::RequestHandler(catalog::TransportCatalogue& catalog) : catalog_(catalog) {}
 		void RequestHandler::CreateCatalog(const unordered_map<string_view, pair<deque<string_view>, bool>>& buses,
 			const unordered_map<string_view, pair<double, double>>& stops,
 			const vector<domain::DistanceBwStops>& stopsDistance) {
@@ -31,7 +31,7 @@ namespace transport {
 			return catalog_.GetRoute(busName);
 		}
 
-		optional<const deque<std::string_view>> RequestHandler::GetStopBuses(const string_view& stopName) {
+		optional<const deque<string_view>> RequestHandler::GetStopBuses(const string_view& stopName) {
 			try {
 				const domain::Stop* stop = catalog_.StopFind(stopName);
 				return catalog_.GetStopBuses(stop->name);
@@ -44,6 +44,21 @@ namespace transport {
 
 		void RequestHandler::SetRenderSettings(const unordered_map<string, domain::SettingType>& settings) {
 			map_.SetSettings(settings);
+		}
+
+		void RequestHandler::SetRouteSettings(unordered_map<string, double>& settings) {
+			route_.SetSettings(move(settings));
+		}
+
+		void RequestHandler::CreateRoute() {
+			route_.CreateRoutes(catalog_);
+		}
+
+		const optional<domain::Trip>& RequestHandler::FindRoute(string_view from, string_view to) {
+			const domain::Stop* fromPtr = catalog_.StopFind(from);
+			const domain::Stop* toPtr = catalog_.StopFind(to);
+			route_.FindRoute(fromPtr, toPtr);
+			return route_.GetReadyRoute();
 		}
 
 		void RequestHandler::DrawMap(ostream& out) {

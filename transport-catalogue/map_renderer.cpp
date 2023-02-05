@@ -8,7 +8,6 @@
 #include <unordered_set>
 #include <algorithm>
 #include <variant>
-#include <cctype>
 #include <set>
 using namespace std;
 namespace transport {
@@ -33,7 +32,7 @@ namespace transport {
             int fontSize;
             pair<double, double> offset;
             if (isBus) {
-                offset = get<std::pair<double, double>>(settings_["bus_label_offset"]);
+                offset = get<pair<double, double>>(settings_["bus_label_offset"]);
                 fontSize = get<double>(settings_["bus_label_font_size"]);
             }
             else {
@@ -41,7 +40,6 @@ namespace transport {
                 fontSize = get<double>(settings_["stop_label_font_size"]);
             }
             svg::Color textColor = get<svg::Color>(settings_["underlayer_color"]);
-
             svg::Text text;
             svg::Text underText;
             underText.SetFillColor(textColor)
@@ -66,12 +64,13 @@ namespace transport {
                 underText.SetFontWeight("bold");
                 text.SetFontWeight("bold");
             }
+
             return { underText , text };
         }
 
         svg::Circle MapRenderer::DrawCircle(svg::Point point) {
             svg::Circle circle;
-            double radius = std::get<double>(settings_["stop_radius"]);
+            double radius = get<double>(settings_["stop_radius"]);
             circle.SetCenter(point).SetRadius(radius).SetFillColor("white");
             return circle;
         }
@@ -113,7 +112,6 @@ namespace transport {
                         route.AddPoint(proj(bus->stops[i]->coord));
                     }
                 }
-
                 route.SetStrokeColor(colorPalette[colorIndex])
                     .SetStrokeWidth(lineWidth)
                     .SetFillColor("none")

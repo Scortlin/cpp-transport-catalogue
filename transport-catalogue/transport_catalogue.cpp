@@ -12,16 +12,18 @@ namespace transport {
 		TransportCatalogue::TransportCatalogue() {}
 
 		void TransportCatalogue::AddStop(string_view stopName, geo::Coordinates coordinates) {
-			stopStorage.push_back(domain::Stop{ std::string(stopName), coordinates });
+			size_t stopId = stopStorage.size();
+			stopStorage.push_back(domain::Stop{ std::string(stopName), coordinates, stopId });
 			stops[stopStorage.back().name] = &stopStorage.back();
+			++uniqueStopCount;
 		}
-
 		void TransportCatalogue::AddRoute(string_view routeName, deque<string_view> stopsName, bool loope) {
 			deque<const domain::Stop*> newStops;
 			for (auto it = stopsName.begin(); it != stopsName.end(); ++it) {
 				newStops.push_back(StopFind(*it));
 			}
-			busStorage.push_back(domain::Bus{ string(routeName) , move(newStops), loope });
+			routesStopCount += newStops.size();
+			busStorage.push_back(domain::Bus{ std::string(routeName) , move(newStops), loope });
 			routes[busStorage.back().name] = &busStorage.back();
 		}
 
@@ -68,7 +70,6 @@ namespace transport {
 					}
 					result.stops = busInfo->stops.size() * 2 - 1;
 				}
-
 				deque<const domain::Stop*> st = busInfo->stops;
 				sort(st.begin(), st.end());
 				auto last = unique(st.begin(), st.end());
@@ -95,7 +96,7 @@ namespace transport {
 			return result;
 		}
 
-		int TransportCatalogue::GetDistance(domain::Stop* stopFrom, domain::Stop* stopTo) {
+		double TransportCatalogue::GetDistance(const domain::Stop* stopFrom, const domain::Stop* stopTo) {
 			if (distanceBwStops.find({ stopFrom, stopTo }) != distanceBwStops.end()) {
 				return distanceBwStops.at({ stopFrom, stopTo });
 			}
@@ -114,8 +115,11 @@ namespace transport {
 				}
 			}
 			sort(result.begin(), result.end(), [](const domain::Bus* lhs, const domain::Bus* rhs) {
-				return lhs->name < rhs->name;});
+				return lhs->name < rhs->name; });
 			return result;
+		}
+		size_t TransportCatalogue::GetUniqueStopCount() {
+			return uniqueStopCount;
 		}
 	}
 }

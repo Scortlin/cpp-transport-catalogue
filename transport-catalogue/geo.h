@@ -1,8 +1,5 @@
 #pragma once
 #include <cmath>
-#include <iostream>
-#include <string>
-
 const int EARTH_RADIUS = 6371000;
 const double PI = 3.1415926535;
 namespace transport {

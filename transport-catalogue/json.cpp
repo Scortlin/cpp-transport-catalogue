@@ -1,12 +1,11 @@
 #include "json.h"
 
 using namespace std;
+
 namespace json {
     namespace {
         using Number = variant<nullptr_t, bool, int, double>;
-
         Node LoadNode(istream& input);
-
         Node LoadArray(istream& input) {
             Array result;
             char c;
@@ -21,12 +20,10 @@ namespace json {
             }
             return Node(move(result));
         }
-
-        Node LoadString(std::istream& input) {
+        Node LoadString(istream& input) {
             using namespace std::literals;
-
-            auto it = std::istreambuf_iterator<char>(input);
-            auto end = std::istreambuf_iterator<char>();
+            auto it = istreambuf_iterator<char>(input);
+            auto end = istreambuf_iterator<char>();
             string s;
             while (true) {
                 if (it == end) {
@@ -85,7 +82,6 @@ namespace json {
                 input >> c;
                 result.insert({ move(key), LoadNode(input) });
             }
-
             if (c != '}') {
                 throw ParsingError("Map parsing error");
             }
@@ -96,7 +92,7 @@ namespace json {
             using namespace std::literals;
             string parsed_num;
             if (input.peek() == 'n') {
-                std::string str;
+                string str;
                 for (int i = 0; i < 4; ++i) {
                     str.push_back(static_cast<char>(input.get()));
                 }
@@ -105,7 +101,6 @@ namespace json {
                 }
                 return nullptr;
             }
-
             if (input.peek() == 't') {
                 string str;
                 for (int i = 0; i < 4; ++i) {
@@ -140,11 +135,9 @@ namespace json {
                     read_char();
                 }
             };
-
             if (input.peek() == '-') {
                 read_char();
             }
-
             if (input.peek() == '0') {
                 read_char();
             }
@@ -158,7 +151,6 @@ namespace json {
                 read_digits();
                 is_int = false;
             }
-
             if (int ch = input.peek(); ch == 'e' || ch == 'E') {
                 read_char();
                 if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -191,7 +183,6 @@ namespace json {
             if (holds_alternative<double>(result)) {
                 return Node(get<double>(result));
             }
-
             if (holds_alternative<bool>(result)) {
                 return Node(get<bool>(result));
             }
@@ -201,6 +192,7 @@ namespace json {
         Node LoadNode(istream& input) {
             char c;
             input >> c;
+
             if (c == '[') {
                 return LoadArray(input);
             }
@@ -237,11 +229,11 @@ namespace json {
     }
 
     bool Node::IsString() const {
-        return holds_alternative<std::string>(*this);
+        return holds_alternative<string>(*this);
     }
 
     bool Node::IsNull() const {
-        return holds_alternative<std::nullptr_t>(*this);
+        return holds_alternative<nullptr_t>(*this);
     }
 
     bool Node::IsArray() const {
@@ -277,7 +269,7 @@ namespace json {
         if (!IsString()) {
             throw logic_error("It is not string");
         }
-        return get<std::string>(*this);
+        return get<string>(*this);
     }
 
     bool Node::AsBool() const {
@@ -291,6 +283,7 @@ namespace json {
         if (!IsPureDouble() && !IsInt()) {
             throw logic_error("It is not dooble");
         }
+
         if (IsPureDouble()) {
             return get<double>(*this);
         }
@@ -311,9 +304,10 @@ namespace json {
             Array& itemAr = get<Array>(*this);
             Node newNode;
             newNode.Swap(move(val));
-            itemAr.push_back(move(newNode));
+            itemAr.push_back(std::move(newNode));
             return true;
         }
+
         this->swap(val);
         return true;
     }
@@ -416,7 +410,6 @@ namespace json {
             PrintMap(root.AsMap(), output);
         }
     }
-
     void Print(const Document& doc, ostream& output) {
         PrintNode(doc.GetRoot(), output);
     }

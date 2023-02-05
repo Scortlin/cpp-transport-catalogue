@@ -10,6 +10,7 @@ namespace json {
 	class ArrayItemContext;
 	class KeyItemContext;
 	class SingleValueItemContext;
+
 	class Builder {
 	private:
 		Node root_;
@@ -17,7 +18,7 @@ namespace json {
 	public:
 		SingleValueItemContext Value(Node::Value value);
 		Builder() = default;
-		KeyItemContext Key(std::string key);
+		KeyItemContext Key(const std::string& key);
 		DictItemContext StartDict();
 		Builder& EndDict();
 		ArrayItemContext StartArray();
@@ -31,7 +32,7 @@ namespace json {
 	public:
 		SingleValueItemContext Value(Node::Value value);
 		ItemContext(Builder& builder);
-		KeyItemContext Key(std::string key);
+		KeyItemContext Key(const std::string& key);
 		DictItemContext StartDict();
 		ArrayItemContext StartArray();
 		Builder& EndDict();
@@ -41,7 +42,7 @@ namespace json {
 
 	class KeyItemContext : public ItemContext {
 	public:
-		KeyItemContext Key(std::string key) = delete;
+		KeyItemContext Key(const std::string& key) = delete;
 		KeyItemContext(Builder& builder);
 		DictItemContext Value(Node::Value value);
 		Builder& EndDict() = delete;
@@ -53,7 +54,7 @@ namespace json {
 	public:
 		SingleValueItemContext Value(Node::Value value) = delete;
 		SingleValueItemContext(Builder& builder);
-		KeyItemContext Key(std::string key) = delete;
+		KeyItemContext Key(const std::string& key) = delete;
 		DictItemContext StartDict() = delete;
 		ArrayItemContext StartArray() = delete;
 		Builder& EndDict() = delete;
@@ -71,7 +72,7 @@ namespace json {
 
 	class ArrayItemContext : public ItemContext {
 	public:
-		KeyItemContext Key(std::string key) = delete;
+		KeyItemContext Key(const std::string& key) = delete;
 		ArrayItemContext(Builder& builder);
 		ArrayItemContext Value(Node::Value value);
 		Builder& EndDict() = delete;

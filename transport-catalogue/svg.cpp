@@ -132,7 +132,7 @@ namespace svg {
         objects_ptr_.push_back(move(obj));
     }
 
-    void Document::Render(ostream& out) const {
+    void   Document::Render(ostream& out) const {
         out << "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>"sv << endl;
         out << "<svg xmlns=\"http://www.w3.org/2000/svg\" version=\"1.1\">"sv << endl;
         for (const unique_ptr<Object>& itemObject : objects_ptr_) {

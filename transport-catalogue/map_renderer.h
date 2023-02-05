@@ -1,6 +1,8 @@
 #pragma once
+
 #include "svg.h"
 #include "domain.h"
+
 #include <iostream>
 #include <deque>
 #include <unordered_set>
@@ -19,6 +21,7 @@ namespace transport {
                 if (points_begin == points_end) {
                     return;
                 }
+
                 const auto [left_it, right_it] = std::minmax_element(
                     points_begin, points_end,
                     [](auto lhs, auto rhs) { return lhs.lng < rhs.lng; });
@@ -40,6 +43,7 @@ namespace transport {
                 if (!(std::abs((max_lat_ - min_lat)) < EPSILON)) {
                     height_zoom = (max_height - 2 * padding) / (max_lat_ - min_lat);
                 }
+
                 if (width_zoom && height_zoom) {
                     zoom_coeff_ = std::min(*width_zoom, *height_zoom);
                 }
