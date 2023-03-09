@@ -1,90 +1,78 @@
 #include "transport_router.h"
-#include "transport_catalogue.h"
-#include "graph.h"
-#include "router.h"
-
-#include <unordered_map>
-#include <variant>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <string_view>
-const int MINUTES_IN_HOUR = 60;
-const int METERS_IN_KILOMETR = 1000;
 using namespace std;
-namespace transport {
-	namespace route {
+const double MINUTES_IN_HOUR = 60.0;
+const double METERS_IN_KILOMETR = 1000.0;
+namespace router{
 
-		void TransportRouter::CreateWaitEdge(graph::VertexId fromId, graph::VertexId toId, string_view name, double weight) {
-			auto edgeExist = graph.GetIncidentEdges(fromId);
-			if (edgeExist.begin() == edgeExist.end()) {
-				graph.AddEdge(graph::Edge<double> { fromId, toId, name, name, name, "Wait", weight });
-			}
-		}
+	TransportRouter::TransportRouter(transport_catalogue::TransportCatalogue& tc)
+		: tc_(tc), dw_graph_(tc.GetAllStopsCount() * 2){}
 
-		double TransportRouter::CalculateEdgeWeight(const transport::domain::Stop* from, const transport::domain::Stop* to, transport::catalog::TransportCatalogue& catalog) {
-			double transformSpeed = settings_["bus_velocity"] * METERS_IN_KILOMETR / MINUTES_IN_HOUR;
-			auto distance = catalog.GetDistance(from, to);
-			return (distance / transformSpeed);
-		}
 
-		void TransportRouter::CreateRoutes(transport::catalog::TransportCatalogue& catalog) {
-			size_t uniqueStopsCount = catalog.GetUniqueStopCount();
-			graph::DirectedWeightedGraph<double> result(uniqueStopsCount * 2);
-			graph = move(result);
-			deque<const domain::Bus*> allRoutes = catalog.GetAllRoutes();
-			double waitTime = settings_["bus_wait_time"];
-
-			for (const domain::Bus* itemRoute : allRoutes) {
-				for (auto itemStopIt = itemRoute->stops.begin(); itemStopIt != itemRoute->stops.end() - 1; ++itemStopIt) {
-					double directWeight = 0;
-					double backWeight = 0;
-					int stopCount = 0;
-					auto nextStopIt = itemStopIt + 1;
-					pair<const transport::domain::Stop*, const transport::domain::Stop*> stopPair{ *itemStopIt , *itemStopIt };
-					graph::VertexId departureVertextId = (**itemStopIt).id;
-					graph::VertexId waitVertextId = (**itemStopIt).id + uniqueStopsCount;
-					CreateWaitEdge(departureVertextId, waitVertextId, (**itemStopIt).name, waitTime);
-					while (nextStopIt != itemRoute->stops.end()) {
-						++stopCount;
-						stopPair.second = *nextStopIt;
-						graph::VertexId destinationVertexId = (**nextStopIt).id;
-						graph::VertexId innerWaitVertexId = (**nextStopIt).id + uniqueStopsCount;
-						CreateWaitEdge(destinationVertexId, innerWaitVertexId, (**nextStopIt).name, waitTime);
-						directWeight += CalculateEdgeWeight(stopPair.first, stopPair.second, catalog);
-						graph.AddEdge(graph::Edge<double> { waitVertextId, destinationVertexId, (**itemStopIt).name, (**nextStopIt).name, itemRoute->name, "Bus", directWeight, stopCount });
-						if (!itemRoute->loope) {
-							backWeight += CalculateEdgeWeight(stopPair.second, stopPair.first, catalog);
-							graph.AddEdge(graph::Edge<double> { innerWaitVertexId, departureVertextId, (**nextStopIt).name, (**itemStopIt).name, itemRoute->name, "Bus", backWeight, stopCount });
-						}
-						stopPair.first = *nextStopIt;
-						++nextStopIt;
-					}
-				}
-			}
-			routerFinder = make_unique<graph::Router<double>>(graph);
-		}
-
-		void TransportRouter::FindRoute(const domain::Stop* from, const domain::Stop* to) {
-			optional<graph::Router<double>::RouteInfo> result = routerFinder->BuildRoute(from->id, to->id);
-			readyRoute.reset();
-			if (result.has_value()) {
-				domain::Trip res;
-				vector<graph::EdgeId> edgeIds = result.value().edges;
-				for (const graph::EdgeId& itemEdgeId : edgeIds) {
-					const graph::Edge edge = graph.GetEdge(itemEdgeId);
-					res.totalTime += edge.weight;
-					res.items.push_back({ edge.type, edge.weight, edge.name, edge.stopCount });
-				}
-				readyRoute = move(res);
-			}
-		}
-
-		void TransportRouter::SetSettings(unordered_map<string, double>&& settings) {
-			settings_ = move(settings);
-		}
-		const optional<domain::Trip>& TransportRouter::GetReadyRoute()const {
-			return readyRoute;
-		}
+	void TransportRouter::ApplyRouterSettings(RouterSettings& settings){
+		settings_ = move(settings);
 	}
+
+	RouterSettings TransportRouter::GetRouterSettings() const{
+		return settings_;
+	}
+
+	const RouteData TransportRouter::CalculateRoute(const string_view from, const string_view to){
+		if (!router_){
+			BuildGraph();
+		}
+		RouteData result;
+		auto calculated_route = router_->BuildRoute(vertexes_wait_.at(from), vertexes_wait_.at(to));
+		if (calculated_route){
+			result.founded = true;
+			for (const auto& element_id : calculated_route->edges){
+				auto edge_details = dw_graph_.GetEdge(element_id);
+				result.total_time += edge_details.weight;
+				result.items.emplace_back(RouteItem{
+					edge_details.edge_name,
+					(edge_details.type == graph::EdgeType::TRAVEL) ? edge_details.span_count : 0,
+					edge_details.weight,
+					edge_details.type });
+			}
+		}
+		return result;
+	}
+
+	void TransportRouter::BuildGraph(){
+		int vertex_id = 0;
+		for (const auto& stop : tc_.GetAllStopsPtr()){
+			vertexes_wait_.insert({ stop->name, vertex_id });
+			vertexes_travel_.insert({ stop->name, ++vertex_id });
+			dw_graph_.AddEdge({
+					vertexes_wait_.at(stop->name),    
+					vertexes_travel_.at(stop->name),  
+					settings_.bus_wait_time * 1.0, 
+					stop->name,  
+					graph::EdgeType::WAIT, 
+					0
+				});
+			++vertex_id;
+		}
+		for (const auto& route : tc_.GetAllRoutesPtr()){
+			for (size_t it_from = 0; it_from < route->stops.size() - 1; ++it_from){
+				int span_count = 0;
+				for (size_t it_to = it_from + 1; it_to < route->stops.size(); ++it_to){
+					double road_distance = 0.0;
+					for (size_t it = it_from + 1; it <= it_to; ++it)
+					{
+						road_distance += static_cast<double>(tc_.GetDistance(route->stops[it - 1], route->stops[it]));
+					}
+					dw_graph_.AddEdge({
+							vertexes_travel_.at(route->stops[it_from]->name),
+							vertexes_wait_.at(route->stops[it_to]->name),
+							road_distance / (settings_.bus_velocity * METERS_IN_KILOMETR /  MINUTES_IN_HOUR),
+							route->route_name,
+							graph::EdgeType::TRAVEL,
+							++span_count
+						});
+				}
+			}
+		}
+		router_ = make_unique<graph::Router<double>>(dw_graph_);
+	}
+
 }

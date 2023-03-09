@@ -1,30 +1,35 @@
-#include "domain.h"
-#include "map_renderer.h"
-#include "transport_catalogue.h"
-#include "json_reader.h"
-#include "request_handler.h"
-#include "json.h"
-
-#include <iostream>
-#include <fstream>
-#include <string>
+#include <iostream>             
+#include <fstream>              
 #include <string_view>
-#include <deque>
-#include <vector>
-#include <sstream>
-#include <unordered_map>
-#include <iomanip>
-#include <map>
-#include <tuple>
+
+#include "request_handler.h"    
+#include "json_reader.h"        
+#include "json_builder.h"
+#include "map_renderer.h"
 using namespace std;
 
-int main() {
-	transport::catalog::TransportCatalogue tCatalog;
-	transport::request::RequestHandler handler(tCatalog);
-	transport::json_reader::JsonReader reader(handler, cin);
-	reader.HandleDataBase();
-	handler.CreateRoute();
-	reader.HandleQuery();
-	reader.Print(cout);
-	return 0;
+void PrintUsage(ostream& stream = cerr){
+    stream << "Usage: transport_catalogue [make_base|process_requests]\n"sv;
+}
+
+int main(int argc, char* argv[]){
+    if (argc != 2){
+        PrintUsage();
+        return 1;
+    }
+    const string_view mode(argv[1]);
+    if (mode == "make_base"sv){
+        transport_catalogue::TransportCatalogue tc;
+        map_renderer::MapRenderer mr;
+        json_reader::ProcessBaseJSON(tc, mr, cin);
+    }
+    else if (mode == "process_requests"sv){
+        transport_catalogue::TransportCatalogue tc;
+        map_renderer::MapRenderer mr;
+        json_reader::ProcessRequestJSON(tc, mr, cin, cout);
+    }
+    else{
+        PrintUsage();
+        return 1;
+    }
 }

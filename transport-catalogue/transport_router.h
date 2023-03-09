@@ -1,31 +1,46 @@
 #pragma once
-#include "graph.h"
+
 #include "domain.h"
-#include "router.h"
 #include "transport_catalogue.h"
+#include "router.h"
 
-#include <unordered_map>
-#include <variant>
-#include <string>
-#include <string_view>
-#include <memory>
 
-namespace transport {
-	namespace route {
-		class TransportRouter {
-		private:
-			graph::DirectedWeightedGraph<double> graph;
-			std::unordered_map<std::string, double> settings_;
-			std::optional<domain::Trip> readyRoute;
-			std::unique_ptr<graph::Router<double>> routerFinder;
-		public:
-			TransportRouter() = default;
-			const std::optional<domain::Trip>& GetReadyRoute()const;
-			void SetSettings(std::unordered_map<std::string, double>&& settings);
-			void CreateRoutes(transport::catalog::TransportCatalogue& catalog);
-			void FindRoute(const domain::Stop* from, const domain::Stop* to);
-			void CreateWaitEdge(graph::VertexId fromId, graph::VertexId toId, std::string_view name, double weight);
-			double CalculateEdgeWeight(const transport::domain::Stop* from, const transport::domain::Stop* to, transport::catalog::TransportCatalogue& catalog);
-		};
-	}
+namespace router{
+
+	struct RouterSettings{
+		int bus_velocity = 40;
+		int bus_wait_time = 6;
+	};
+
+	struct RouteItem{
+		std::string edge_name;
+		int span_count = 0;
+		double time = 0.0;
+		graph::EdgeType type;
+	};
+
+	struct RouteData{
+		double total_time = 0.0;
+		std::vector<RouteItem> items;
+		bool founded = false;
+	};
+
+
+class TransportRouter{
+	public:
+		TransportRouter(transport_catalogue::TransportCatalogue&);
+		void ApplyRouterSettings(RouterSettings&);
+		RouterSettings GetRouterSettings() const;
+		const RouteData CalculateRoute(const std::string_view, const std::string_view);
+
+	private:
+		void BuildGraph();
+		RouterSettings settings_;
+		transport_catalogue::TransportCatalogue& tc_;
+		graph::DirectedWeightedGraph<double> dw_graph_;
+		std::unique_ptr<graph::Router<double>> router_ = nullptr;
+		std::unordered_map<std::string_view, size_t> vertexes_wait_;
+		std::unordered_map<std::string_view, size_t> vertexes_travel_;
+	};
+
 }

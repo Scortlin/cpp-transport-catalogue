@@ -1,82 +1,46 @@
 #pragma once
+
 #include "geo.h"
-#include "svg.h"
-#include <string_view>
+
 #include <string>
-#include <deque>
-#include <algorithm>
-#include <cstdlib>
-#include <iostream>
-#include <optional>
-#include <vector>
-#include <cmath>
+#include <string_view>
+#include <vector>   
 
-namespace transport {
-    namespace domain {
-        using SettingType = std::variant<double, std::pair<double, double>, svg::Color, std::vector<svg::Color>>;
+namespace transport_catalogue{
+struct Stop;      
+struct Route;     
 
-        struct Stop {
-            std::string name = "";
-            geo::Coordinates coord = { 0.0, 0.0 };
-            size_t id = 0;
-            Stop() = default;
-            Stop(std::string_view name_, geo::Coordinates coord_, size_t id_) :name(name_), coord(coord_), id(id_) {};
-            bool operator==(const Stop& other) const {
-                return name == other.name;
-            }
-            bool operator!=(const Stop& other) const {
-                return !(*this == other);
-            }
-        };
+struct Stop{
+	Stop() = default;
+	Stop(const std::string_view stop_name, const double lat, const double lng);
+	Stop(const Stop* other_stop_ptr);
+	std::string name;
+	geo::Coordinates coords{0,0};
+};
 
-        struct StopCompare {
-            bool operator()(const Stop* lhs, const Stop* rhs) const {
-                return lhs->name < rhs->name;
-            }
-        };
 
-        struct Bus {
-            std::string name = "";
-            std::deque<const Stop*> stops = {};
-            bool loope = false;
-            Bus() = default;
-            Bus(std::string_view name_, std::deque<const Stop*> stops_, bool loope_) :name(name_), stops(std::move(stops_)), loope(loope_) {};
-        };
+struct Route{
+	Route() = default;
+	Route(const Route* other_stop_ptr);
 
-        struct Route {
-            std::string_view name = "";
-            size_t stops = 0;
-            size_t uStops = 0;
-            double length = 0.0;
-            double curvature = 0.0;
-            Route() = default;
-            Route(std::string_view name_, size_t stops_, size_t uStops_, double length_, double curvature_) :name(name_), stops(stops_), uStops(uStops_), length(length_), curvature(curvature_) {};
-        };
+	std::string route_name;
+	std::vector<const Stop*> stops;
+	size_t unique_stops_qty = 0;
+	double geo_route_length = 0;
+	size_t meters_route_length = 0;
+	double curvature = 0;
+	bool is_circular = false;
+};
 
-        struct StopLengthHasher {
-            size_t operator()(std::pair<const Stop*, const Stop*> key) const {
-                return static_cast<size_t>(key.first->name.size() * key.first->coord.lat * key.first->coord.lng * key.second->name.size() * key.second->coord.lat * key.second->coord.lng);
-            }
-        };
-
-        struct DistanceBwStops {
-            std::string_view fromStop_;
-            std::string_view toStop_;
-            int distance_ = 0;
-            DistanceBwStops() = default;
-            DistanceBwStops(std::string_view from, std::string_view to, int distance) :fromStop_(from), toStop_(to), distance_(distance) {};
-        };
-
-        struct TripAction {
-            std::string type;
-            double time = 0.0;
-            std::string_view stopBusName;
-            int spanCount = 0;
-        };
-
-        struct Trip {
-            double totalTime = 0.0;
-            std::vector<domain::TripAction> items;
-        };
-    }
+struct RendererData{
+	std::vector<geo::Coordinates> stop_coords;
+	std::vector<std::string_view> stop_names;  
+	bool is_circular = false; 
+};
+class Hasher{
+public:
+	std::size_t operator()(const std::pair<const Stop*, const Stop*> pair_of_pointers) const noexcept;
+private:
+	std::hash<const void*> hasher_;
+};
 }

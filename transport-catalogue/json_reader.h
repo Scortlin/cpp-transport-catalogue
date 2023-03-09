@@ -1,38 +1,33 @@
 #pragma once
+
+#include "request_handler.h"        
+#include "json_builder.h"
 #include "json.h"
-#include "request_handler.h"
+#include "map_renderer.h"
+#include "transport_router.h"
+#include "serialization.h"
 
-#include <iostream>
-#include <unordered_map>
-#include <deque>
-#include <vector>
-#include <string_view>
-#include <utility>
+#include <iostream>                  
+#include <sstream>                   
+#include <vector>                    
 
-namespace transport {
-	namespace json_reader {
-		class JsonReader {
-		private:
-			request::RequestHandler& handler_;
-			std::istream& input_;
-			std::optional<json::Node> data_;
-			std::optional<json::Node> query_;
-			std::unordered_map<std::string_view, std::pair<std::deque<std::string_view>, bool>> buses_;
-			std::unordered_map<std::string_view, std::pair<double, double>> stops_;
-			std::vector<domain::DistanceBwStops> stopsDistance_;
-			json::Node nodeResul_;
-			void PrepareSettings(const json::Node jsonSettings);
-			void PrepareRouteSettings(const json::Node routeSettings);
-			void HandleStream();
-			void HandleStopQuery(const json::Node& stop, json::Array& saveConatiner);
-			void HandleBusQuery(const json::Node& bus, json::Array& saveConatiner);
-			void HandleMapQuery(const json::Node& map, json::Array& saveConatiner);
-			void HandleRouteQuery(const json::Node& route, json::Array& saveConatiner);
-		public:
-			JsonReader(request::RequestHandler& handler, std::istream& input);
-			void HandleDataBase();
-			void HandleQuery();
-			void Print(std::ostream& output);
-		};
-	}
+namespace json_reader{
+void ProcessBaseJSON(transport_catalogue::TransportCatalogue&, map_renderer::MapRenderer&, std::istream&);
+void ProcessRequestJSON(transport_catalogue::TransportCatalogue&, map_renderer::MapRenderer&, std::istream&, std::ostream&);
+
+void AddToDataBase(transport_catalogue::TransportCatalogue&, const json::Array&);
+void AddStopData(transport_catalogue::TransportCatalogue&, const json::Dict&);
+void AddStopDistance(transport_catalogue::TransportCatalogue&, const json::Dict&);
+void AddRouteData(transport_catalogue::TransportCatalogue&, const json::Dict&);
+
+const svg::Color ConvertJSONColorToSVG(const json::Node&);
+void ReadRendererSettings(map_renderer::MapRenderer&, const json::Dict&);
+void ReadRouterSettings(router::TransportRouter&, const json::Dict&);
+const std::string ReadSerializationSettings(const json::Dict&);
+
+void ParseRawJSONQueries(transport_catalogue::RequestHandler&, router::TransportRouter&, const json::Array&, std::ostream&);
+const json::Node ProcessStopQuery(transport_catalogue::RequestHandler&, const json::Dict&);
+const json::Node ProcessBusQuery(transport_catalogue::RequestHandler&, const json::Dict&);
+const json::Node ProcessMapQuery(transport_catalogue::RequestHandler&, const json::Dict&);
+const json::Node ProcessRouteQuery(router::TransportRouter&, const json::Dict&);
 }

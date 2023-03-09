@@ -1,36 +1,23 @@
 #pragma once
 
-#include "domain.h"
-#include "map_renderer.h"
 #include "transport_catalogue.h"
-#include "transport_router.h"
-#include <vector>
-#include <unordered_map>
-#include <string_view>
-#include <deque>
-#include <utility>
-#include <optional>
-#include <variant>
+#include "map_renderer.h"
 
-namespace transport {
-	namespace request {
-		class RequestHandler {
-		private:
-			catalog::TransportCatalogue& catalog_;
-			render::MapRenderer map_;
-			route::TransportRouter route_;
-		public:
-			RequestHandler(catalog::TransportCatalogue& catalog);
-			void CreateCatalog(const std::unordered_map<std::string_view, std::pair<std::deque<std::string_view>, bool>>& buses,
-				const std::unordered_map<std::string_view, std::pair<double, double>>& stops,
-				const std::vector<domain::DistanceBwStops>& stopsDistance);
-			const domain::Route GetRoute(const std::string_view& busName);
-			std::optional<const std::deque<std::string_view>> GetStopBuses(const std::string_view& stopName);
-			void SetRenderSettings(const std::unordered_map<std::string, domain::SettingType>& settings);
-			void SetRouteSettings(std::unordered_map<std::string, double>& settings);
-			void CreateRoute();
-			const std::optional<domain::Trip>& FindRoute(std::string_view from, std::string_view to);
-			void DrawMap(std::ostream& out);
-		};
-	}
+#include <unordered_set>    
+#include <optional>         
+#include <string_view>      
+#include <map>             
+
+namespace transport_catalogue{
+    class RequestHandler{
+    public:
+        RequestHandler(const TransportCatalogue& tc, map_renderer::MapRenderer& mr) : tc_(tc), mr_(mr)
+        {}
+        const std::optional<RouteStatPtr> GetRouteInfo(const std::string_view& bus_name) const;
+        const std::optional<StopStatPtr> GetBusesForStop(const std::string_view& stop_name) const;
+        svg::Document GetMapRender() const;
+    private:
+        const TransportCatalogue& tc_;
+        map_renderer::MapRenderer& mr_;
+    };
 }
