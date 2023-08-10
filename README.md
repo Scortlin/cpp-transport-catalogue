@@ -19,29 +19,45 @@ cmake --install .
 ```
 4) В папке package появился bin\protoc.exe - с помощью него будут копилироваться proto-файлы, а в папке lib - статические библиотеки для работы с Protobuf.
 5) Для компиляции proto-файла нужно выполнить следующую команду:
+```
 <путь к пакету Protobuf>\bin\proto --cpp_out . transport_catalogue.proto
-6) Собрать проект с помощью CMake:
+```
+7) Собрать проект с помощью CMake:
+```
 cmake . -DCMAKE_PREFIX_PATH=/path/to/protobuf/package
 cmake --build .
-7) При необходимости добавить папки include и lib в дополнительные зависимости проекта - Additional Include Directories и Additional Dependencies.
+```
+8) При необходимости добавить папки include и lib в дополнительные зависимости проекта - Additional Include Directories и Additional Dependencies.
 
 # Формат входных данных
+Входные данные поступают программе из stdin в формате JSON-объекта, который имеет на верхнем уровне следующую структуру:
+```
+{
+  "base_requests": [ ... ],
+  "render_settings": { ... },
+  "routing_settings": { ... },
+  "serialization_settings": { ... },
+  "stat_requests": [ ... ]
+}
+```
+base_requests — массив с описанием автобусных маршрутов и остановок.
 
+stat_requests — массив с запросами к транспортному справочнику.
+
+render_settings — словарь для отрисовки изображения.
+
+routing_settings — словарь, содержащий в себе настройки для скорости автобусов и времени ожидания на остановке.
+
+serialization_settings — настройки сериализации.
 # Стек технологий
-OOP: inheritance, abstract interfaces, final classes
-Unordered map/set
-STL smart pointers
-std::variant and std:optional
-JSON load / output
-SVG image format embedded inside XML output
-Curiously Recurring Template Pattern (CRTP)
-Method chaining
-Facade design pattern
-C++17 with С++20 Ranges emulation
-Directed Weighted Graph data structure for Router module
-Google Protocol Buffers for data serialization
-Static libraries .LIB/.A
-CMake generated project and dependency files
-
+1) OOP: inheritance, abstract interfaces, final classes
+2) Unordered map/set
+3) STL smart pointers
+4) std::variant and std:optional
+5) JSON load / output
+6) SVG image format embedded inside XML output
+7) Method chaining
+# Сборка
+С помощью CMake собрать файл CMakeLists.txt.
 # Системные требования
 Компилятор С++ с поддержкой стандарта C++17 или новее
